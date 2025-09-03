@@ -12,6 +12,7 @@ eb\dto\imagefiledto.class
 eb\util\token_util.class
 eb\dto\imagedto.class
 eb\service\property_service.class
+eb\controller\image_controller.class
 eb\controller\main_controller.class
 eb\dto\mediadto.class
 eb\controller\property_controller.class

@@ -1,0 +1,4 @@
+<context-param>
+    <param-name>uploadDir</param-name>
+    <param-value>uploads</param-value>
+</context-param>

@@ -8,6 +8,7 @@ import eb.dao.imagedao;
 import eb.dao.mediadao;
 import eb.dao.propertydao;
 import eb.dao.web_userdao;
+import eb.dto.imagedto;
 import eb.dto.propertydto;
 import eb.util.helper_util;
 import java.util.List;
@@ -32,6 +33,11 @@ public class property_service {
 
     public List<propertydto> handle_retrieve_property(String landlord_id) throws Exception {
         List<propertydto> propertyList = PDAO.retrieve_all_property_bylandlordid(landlord_id);
+        for (propertydto prop : propertyList) {
+            List<imagedto> images = IDAO.retrieve_image_by_propertyid(prop.getProperty_id());
+            prop.setImages(images);
+        }
+
         return propertyList;
     }
 }

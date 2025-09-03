@@ -47,9 +47,10 @@ public class imagedao {
             try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     imageList.add(new imagedto(
-                            "image_id",
-                            "image_path",
-                            propertyid));
+                            rs.getString("image_id"), // actual image_id from DB
+                            rs.getString("image_path"), // actual image_path from DB
+                            propertyid
+                    ));
                 }
             }
         }
