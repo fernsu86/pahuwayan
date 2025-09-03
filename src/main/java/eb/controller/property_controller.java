@@ -160,7 +160,15 @@ public class property_controller extends HttpServlet {
         }
 
         if (!fileDtos.isEmpty()) {
-            uploadfile_service uploadService = new uploadfile_service(getServletContext().getRealPath("/uploads"));
+            // DEV: use the webapp/uploads folder (absolute path)
+            String uploadDir = getServletContext().getRealPath("/uploads");
+            if (uploadDir == null || uploadDir.isEmpty()) {
+                // fallback (shouldn't happen) but safer
+                throw new ServletException("Cannot resolve webapp uploads folder.");
+            }
+
+            // IMPORTANT: pass false because uploadDir is an absolute path
+            uploadfile_service uploadService = new uploadfile_service(uploadDir, false);
             uploadService.saveImages(propertyId, fileDtos);
         }
 
