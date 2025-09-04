@@ -40,4 +40,14 @@ public class property_service {
 
         return propertyList;
     }
+
+    public List<propertydto> handle_retrieve_all_properties() throws Exception {
+        List<propertydto> propertyList = PDAO.retrieve_all_property();
+        for (propertydto prop : propertyList) {
+            List<imagedto> images = IDAO.retrieve_image_by_propertyid(prop.getProperty_id());
+            prop.setImages(images);
+        }
+        return propertyList;
+    }
+
 }

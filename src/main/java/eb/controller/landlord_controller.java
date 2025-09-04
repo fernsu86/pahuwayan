@@ -38,6 +38,9 @@ public class landlord_controller extends HttpServlet {
                 case "createlandlord":
                     handleLandlord(request, response);
                     break;
+                case "updatelandlordbyid":
+                    handleUpdateLandlord(request, response);
+                    break;
                 default:
                     sendError(response, "Unsupported POST action: " + action);
             }
@@ -74,7 +77,7 @@ public class landlord_controller extends HttpServlet {
         }
     }
 
-    // ==================== Handlers ====================
+    // ==================== Handlers ====================  
     private void handleLandlord(HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException, Exception {
 
@@ -108,6 +111,33 @@ public class landlord_controller extends HttpServlet {
         }
     }
 
+    private void handleUpdateLandlord(HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException, Exception {
+
+        String user_id = request.getParameter("user_id");
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+        String status = request.getParameter("status");
+        String role_name = request.getParameter("role_name");
+        String barangay_name = request.getParameter("barangay_name");
+        String email = request.getParameter("email");
+        String phone = request.getParameter("phone");
+
+        boolean success = user.update(
+                user_id, username, password, status,
+                role_name, barangay_name, email, phone
+        );
+
+        if (success) {
+            request.setAttribute("message", "Landlord updated successfully!");
+        } else {
+            request.setAttribute("error", "Failed to update landlord.");
+        }
+
+        // forward to landlord list or detail page
+        request.getRequestDispatcher("admin.jsp").forward(request, response);
+    }
+
     private void handleListLandlord(HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException, Exception {
 
@@ -123,6 +153,7 @@ public class landlord_controller extends HttpServlet {
         RequestDispatcher rd = request.getRequestDispatcher("admin.jsp");
         rd.forward(request, response);
     }
+// no idea what this handle do lol
 
     private void handleStatus(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
