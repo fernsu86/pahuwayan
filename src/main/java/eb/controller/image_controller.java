@@ -13,23 +13,17 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @WebServlet("/uploads/*")
-// Accessible at /yourapp/image/filename
 public class image_controller extends HttpServlet {
 
     private String uploadDir;
 
     @Override
     public void init() throws ServletException {
-        // Try context-param (for production)
+        // Always load from context-param
         uploadDir = getServletContext().getInitParameter("uploadDir");
 
         if (uploadDir == null || uploadDir.isEmpty()) {
-            // Fallback for dev: inside webapp/uploads
-            uploadDir = getServletContext().getRealPath("/uploads");
-        }
-
-        if (uploadDir == null || uploadDir.isEmpty()) {
-            throw new ServletException("No upload directory configured or found.");
+            throw new ServletException("uploadDir not configured in web.xml");
         }
     }
 
@@ -59,8 +53,7 @@ public class image_controller extends HttpServlet {
             resp.setContentType(mime);
             resp.setHeader("Content-Disposition", "inline; filename=\"" + filename + "\"");
 
-            // Stream file to response
-            try ( OutputStream out = resp.getOutputStream()) {
+            try (OutputStream out = resp.getOutputStream()) {
                 Files.copy(file, out);
             }
         } else {

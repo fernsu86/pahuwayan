@@ -159,18 +159,16 @@ public class property_controller extends HttpServlet {
             }
         }
 
-        if (!fileDtos.isEmpty()) {
-            // DEV: use the webapp/uploads folder (absolute path)
-            String uploadDir = getServletContext().getRealPath("/uploads");
-            if (uploadDir == null || uploadDir.isEmpty()) {
-                // fallback (shouldn't happen) but safer
-                throw new ServletException("Cannot resolve webapp uploads folder.");
-            }
-
-            // IMPORTANT: pass false because uploadDir is an absolute path
-            uploadfile_service uploadService = new uploadfile_service(uploadDir, false);
-            uploadService.saveImages(propertyId, fileDtos);
+        // Use uploadDir from web.xml context-param
+        String uploadDir = getServletContext().getInitParameter("uploadDir");
+        if (uploadDir == null || uploadDir.isEmpty()) {
+            throw new ServletException("uploadDir not configured in web.xml");
         }
+
+// If you want it to always be an absolute path (best practice):
+// Example in web.xml: <param-value>C:/permanent_uploads</param-value>
+        uploadfile_service uploadService = new uploadfile_service(uploadDir, false);
+        uploadService.saveImages(propertyId, fileDtos);
 
         // Fetch updated property list
         List<propertydto> propertyList = property.handle_retrieve_property(landlord_id);

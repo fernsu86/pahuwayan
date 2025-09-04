@@ -8,8 +8,9 @@
     <!-- ================== Global App Config ================== -->
     <context-param>
         <param-name>uploadDir</param-name>
-        <param-value>uploads</param-value>
+        <param-value>D:\uploadsidk</param-value>
     </context-param>
+
 
     <!-- ================== Welcome Page ================== -->
     <welcome-file-list>
