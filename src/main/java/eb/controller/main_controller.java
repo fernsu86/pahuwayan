@@ -39,12 +39,12 @@ public class main_controller extends HttpServlet {
         //    ROUTES.put("updatepropertybyid", "/property_controller");
         ROUTES.put("viewpropertybylandlordid", "/property_controller");
         //    ROUTES.put("searchbyusernamewithfilter", "/property_controller");
-        //    ROUTES.put("viewproperty_list", "/property_controller");
+        ROUTES.put("viewproperty_list", "/property_controller");
 
         // Landlords
         ROUTES.put("createlandlord", "/landlord_controller");
         ROUTES.put("deletelandlordbyid", "/landlord_controller");
-        //    ROUTES.put("updatelandlordbyid", "/landlord_controller");
+        ROUTES.put("updatelandlordbyid", "/landlord_controller");
         //    ROUTES.put("viewlandlordbyid", "/landlord_controller");
         //    ROUTES.put("searchbyusername", "/landlord_controller");
         ROUTES.put("viewlandlord_list", "/landlord_controller");

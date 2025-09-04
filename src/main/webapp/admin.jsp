@@ -58,18 +58,35 @@
                 <th>Barangay</th>
                 <th>Email</th>
                 <th>Phone</th>
+                <th>Update</th>
             </tr>
             <c:forEach var="l" items="${landlordList}">
                 <tr>
-                    <td>${l.user_id}</td>
-                    <td>${l.username}</td>
-                    <td>${l.status}</td>
-                    <td>${l.barangay_name}</td>
-                    <td>${l.email}</td>
-                    <td>${l.phone}</td>
+                    <form action="landlord_controller" method="post">
+                        <input type="hidden" name="action" value="updatelandlord"/>
+                        <input type="hidden" name="user_id" value="${l.user_id}"/>
+
+                        <td>${l.user_id}</td>
+                        <td><input type="text" name="username" value="${l.username}"/></td>
+                        <td><input type="text" name="status" value="${l.status}"/></td>
+                        <td><input type="text" name="barangay_name" value="${l.barangay_name}"/></td>
+                        <td><input type="email" name="email" value="${l.email}"/></td>
+                        <td><input type="text" name="phone" value="${l.phone}"/></td>
+                        <td>
+                            <button type="submit">Update</button>
+                        </td>
+                    </form>
                 </tr>
             </c:forEach>
         </table>
+    </c:if>
+
+    <!-- ================= Messages ================= -->
+    <c:if test="${not empty message}">
+        <p style="color:green;">${message}</p>
+    </c:if>
+    <c:if test="${not empty error}">
+        <p style="color:red;">${error}</p>
     </c:if>
 
 </body>

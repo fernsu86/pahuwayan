@@ -37,4 +37,48 @@ public class user_service {
         List<web_userdto> landlordList = userDao.retrive_landlord_list(role_name);
         return landlordList;
     }
+
+    public boolean update(
+            String user_id,
+            String username,
+            String password,
+            String status,
+            String role_name,
+            String barangay_name,
+            String email,
+            String phone) throws ClassNotFoundException, SQLException {
+
+        // Get current user from DB
+        web_userdto user = userDao.retrive_user_byid(user_id);
+        if (user == null) {
+            return false; // no such user
+        }
+
+        // Only update if parameter is not null
+        if (username != null) {
+            user.setUsername(username);
+        }
+        if (password != null) {
+            user.setPassword(password);
+        }
+        if (status != null) {
+            user.setStatus(status);
+        }
+        if (role_name != null) {
+            user.setRole_name(role_name);
+        }
+        if (barangay_name != null) {
+            user.setBarangay_name(barangay_name);
+        }
+        if (email != null) {
+            user.setEmail(email);
+        }
+        if (phone != null) {
+            user.setPhone(phone);
+        }
+
+        // Save updated user
+        return userDao.update_landlord_user(user);
+    }
+
 }

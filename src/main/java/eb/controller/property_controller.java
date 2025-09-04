@@ -221,9 +221,16 @@ public class property_controller extends HttpServlet {
     }
 
     private void handleViewPropertyList(HttpServletRequest request, HttpServletResponse response)
-            throws IOException {
-        // TODO: fetch all properties
-        response.getWriter().write("Property list!");
+            throws IOException, ServletException {
+        try {
+            List<propertydto> propertyList = property.handle_retrieve_all_properties();
+            request.setAttribute("properties", propertyList);
+
+            RequestDispatcher rd = request.getRequestDispatcher("index.jsp");
+            rd.forward(request, response);
+        } catch (Exception e) {
+            handleServerError(response, e);
+        }
     }
 
     // ==================== Error Helpers ====================
