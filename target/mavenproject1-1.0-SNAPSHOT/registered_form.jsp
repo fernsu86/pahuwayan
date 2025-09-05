@@ -33,7 +33,10 @@
 
             <button type="submit">Register</button>
         </form>
-
+        <p>
+           
+            <a href="welcome.jsp">Login here</a>
+        </p>
         <!-- Show feedback messages -->
         <c:if test="${not empty error}">
             <p style="color:red">${error}</p>

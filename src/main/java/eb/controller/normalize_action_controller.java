@@ -98,7 +98,7 @@ public class normalize_action_controller extends HttpServlet {
                 );
                 response.getWriter().write(json);
             } else {
-                response.sendRedirect(request.getContextPath() + "/index.jsp");
+                response.sendRedirect(request.getContextPath() + "/welcome.jsp");
             }
         } else {
             sendError(response, "Invalid username or password");
@@ -117,7 +117,7 @@ public class normalize_action_controller extends HttpServlet {
             response.setContentType("application/json");
             response.getWriter().write("{\"message\":\"Logout successful\"}");
         } else {
-            response.sendRedirect(request.getContextPath() + "/index.jsp");
+            response.sendRedirect(request.getContextPath() + "/welcome.jsp");
         }
     }
 
@@ -143,7 +143,7 @@ public class normalize_action_controller extends HttpServlet {
         } else {
             if (success) {
                 request.setAttribute("message", "User created successfully, please login.");
-                request.getRequestDispatcher("index.jsp").forward(request, response);
+                request.getRequestDispatcher("registered_form.jsp").forward(request, response);
             } else {
                 request.setAttribute("error", "Failed to create user.");
                 request.getRequestDispatcher("registered_form.jsp").forward(request, response);

@@ -81,14 +81,13 @@ public class property_controller extends HttpServlet {
                     handleViewPropertyByLandlord(request, response);
                     break;
 
-                case "searchbyusernamewithfilter":
-                    handleSearchByUsername(request, response);
+                case "searchbypropertynamewithfilter":
+                    handleSearchByPropertyName(request, response);
                     break;
 
                 case "viewproperty_list":
                     handleViewPropertyList(request, response);
                     break;
-
                 default:
                     sendError(response, "Unsupported GET action: " + action);
             }
@@ -212,10 +211,49 @@ public class property_controller extends HttpServlet {
 
     }
 
-    private void handleSearchByUsername(HttpServletRequest request, HttpServletResponse response)
-            throws IOException {
-        // TODO: implement search
-        response.getWriter().write("Search results for username!");
+    private void handleSearchByPropertyName(HttpServletRequest request, HttpServletResponse response)
+            throws IOException, Exception {
+        String property_name = request.getParameter("property_name");
+        String property_type = request.getParameter("property_type");
+        String amenity_type = request.getParameter("amenity_type");
+
+        double min_price = request.getParameter("min_price") != null && !request.getParameter("min_price").isEmpty()
+                ? Double.parseDouble(request.getParameter("min_price"))
+                : 0;
+        double max_price = request.getParameter("max_price") != null && !request.getParameter("max_price").isEmpty()
+                ? Double.parseDouble(request.getParameter("max_price"))
+                : Double.MAX_VALUE;
+
+        List<propertydto> propertyList = property.handle_retrieve_by_property_name(property_name);
+        List<propertydto> FilterList = new ArrayList<>();
+
+        for (propertydto tmp : propertyList) {
+            boolean matches = true;
+
+            if (property_type != null && !property_type.isEmpty()
+                    && tmp.getProperty_type() != null) {
+                if (!tmp.getProperty_type().toLowerCase().contains(property_type.toLowerCase())) {
+                    matches = false;
+                }
+            }
+
+            if (amenity_type != null && !amenity_type.isEmpty()
+                    && tmp.getProperty_amenity() != null) {
+                if (!tmp.getProperty_amenity().toLowerCase().contains(amenity_type.toLowerCase())) {
+                    matches = false;
+                }
+            }
+
+            if (matches) {
+                if (tmp.getProperty_price() >= min_price && tmp.getProperty_price() <= max_price) {
+                    FilterList.add(tmp);
+                }
+            }
+        }
+
+        request.setAttribute("properties", FilterList); // ✅ matches JSP
+        RequestDispatcher rd = request.getRequestDispatcher("index.jsp");
+        rd.forward(request, response);
     }
 
     private void handleViewPropertyList(HttpServletRequest request, HttpServletResponse response)
@@ -242,4 +280,5 @@ public class property_controller extends HttpServlet {
         response.getWriter().write("{\"error\":\"Server error: " + e.getMessage() + "\"}");
         e.printStackTrace();
     }
+
 }
