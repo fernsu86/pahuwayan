@@ -22,7 +22,7 @@ public class propertydao {
 
     public List<propertydto> retrieve_all_property_bylandlordid(String landlordid) throws Exception {
         List<propertydto> propertyList = new ArrayList<>();
-        String sql = "SELECT * FROM dbo.property WHERE landlord_id = ?";
+        String sql = "SELECT * FROM dbo.property WHERE landlord_id = ? AND property_status = 'active'";
 
         try ( Connection con = db_util.getConnection();  PreparedStatement ps = con.prepareStatement(sql)) {
 
@@ -52,7 +52,7 @@ public class propertydao {
     public List<propertydto> retrieve_all_property() throws Exception {
         List<propertydto> propertyList = new ArrayList<>();
 
-        String sql = "SELECT * FROM dbo.property";
+        String sql = "SELECT * FROM dbo.property WHERE property_status ='status'";
 
         try ( Connection con = db_util.getConnection();  PreparedStatement ps = con.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
 
@@ -77,11 +77,11 @@ public class propertydao {
 
     public List<propertydto> retrieve_property_by_property_name(String property_name) throws Exception, SQLException {
         List<propertydto> propertyList = new ArrayList<>();
-        String sql = "SELECT * FROM dbo.property WHERE property_name LIKE ?";
+        String sql = "SELECT * FROM dbo.property WHERE property_name LIKE ? AND property_status='active'";
 
         try ( Connection con = db_util.getConnection();  PreparedStatement ps = con.prepareStatement(sql)) {
 
-            ps.setString(1, "%" + property_name + "%"); // ✅ bind the parameter
+            ps.setString(1, "%" + property_name + "%");
 
             try ( ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -130,11 +130,10 @@ public class propertydao {
             ps.setString(6, property_type);
             ps.setString(7, property_amenity);
             ps.setDouble(8, property_price);
-            ps.setString(9, "pending");
+            ps.setString(9, "active");
             ps.setString(10, description);
 
             int rows = ps.executeUpdate();
-            System.out.println("DEBUG: Insert rows=" + rows);
 
             return rows > 0 ? propertyId : null;
 

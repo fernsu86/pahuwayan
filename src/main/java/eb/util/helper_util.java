@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 /**
@@ -92,7 +93,7 @@ public class helper_util {
 
     // property_id
     public static String generate_property_Uid() throws Exception {
-        return "Prty" + propertydao.retrieve_all_property().size();
+        return "Prty" + UUID.randomUUID().toString();
     }
 
     // Normalize Gmail-only emails
