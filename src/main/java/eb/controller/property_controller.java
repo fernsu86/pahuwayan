@@ -170,7 +170,13 @@ public class property_controller extends HttpServlet {
     }
 
     private void handleDeleteProperty(HttpServletRequest request, HttpServletResponse response)
-            throws IOException {
+            throws IOException, ServletException {
+
+        HttpSession session = request.getSession(false);
+        String landlordId = helper_util.requireLoggedInLandlord(session, response);
+        if (landlordId == null) {
+            return;
+        }
 
         String propertyId = helper_util.requireParam(request, response, "property_id");
         if (propertyId == null) {
@@ -179,13 +185,18 @@ public class property_controller extends HttpServlet {
 
         try {
             boolean success = PROPERTY_SERVICE.handle_delete_property(propertyId);
+
+            List<propertydto> propertyList = PROPERTY_SERVICE.handle_retrieve_property(landlordId);
+            request.setAttribute("propertyList", propertyList);
+
             if (success) {
-                helper_util.sendOk(response,
-                        "{\"success\":true,\"message\":\"Property deleted successfully!\"}");
+                request.setAttribute("message", "Property deleted successfully!");
             } else {
-                helper_util.sendNotFound(response,
-                        "{\"success\":false,\"message\":\"Property not found or already deactivated!\"}");
+                request.setAttribute("error", "Property not found or already deactivated.");
             }
+
+            helper_util.forward(request, response, "landlord.jsp");
+
         } catch (Exception e) {
             helper_util.handleServerError(response, e);
         }
