@@ -59,5 +59,7 @@ public class property_service {
         return propertyList;
     }
     
-    
+    public boolean handle_delete_property(String property_id) throws Exception{
+     return PDAO.delete_property(property_id);
+    }
 }
