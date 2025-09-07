@@ -19,7 +19,7 @@ import java.util.List;
  * @author ACER
  */
 public class propertydao {
-
+    //retrieve active
     public List<propertydto> retrieve_all_property_bylandlordid(String landlordid) throws Exception {
         List<propertydto> propertyList = new ArrayList<>();
         String sql = "SELECT * FROM dbo.property WHERE landlord_id = ? AND property_status = 'active'";
@@ -52,7 +52,7 @@ public class propertydao {
     public List<propertydto> retrieve_all_property() throws Exception {
         List<propertydto> propertyList = new ArrayList<>();
 
-        String sql = "SELECT * FROM dbo.property WHERE property_status ='status'";
+        String sql = "SELECT * FROM dbo.property WHERE property_status ='active'";
 
         try ( Connection con = db_util.getConnection();  PreparedStatement ps = con.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
 
@@ -103,7 +103,175 @@ public class propertydao {
         }
         return propertyList;
     }
+    //retrieve pending property
+    public List<propertydto> retrieve_all_pending_property_bylandlordid(String landlordid) throws Exception {
+        List<propertydto> propertyList = new ArrayList<>();
+        String sql = "SELECT * FROM dbo.property WHERE landlord_id = ? AND property_status = 'pending'";
 
+        try ( Connection con = db_util.getConnection();  PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, landlordid); // ✅ bind the parameter
+
+            try ( ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    propertydto property = new propertydto(
+                            rs.getString("property_id"),
+                            rs.getString("barangay_name"),
+                            rs.getString("landlord_id"),
+                            rs.getString("property_name"),
+                            rs.getString("property_address"),
+                            rs.getString("property_type"),
+                            rs.getString("property_amenity"),
+                            rs.getDouble("property_price"),
+                            rs.getString("property_status"),
+                            rs.getString("description")
+                    );
+                    propertyList.add(property);
+                }
+            }
+        }
+        return propertyList;
+    }
+
+    public List<propertydto> retrieve_all_pending_property() throws Exception {
+        List<propertydto> propertyList = new ArrayList<>();
+
+        String sql = "SELECT * FROM dbo.property WHERE property_status ='pending'";
+
+        try ( Connection con = db_util.getConnection();  PreparedStatement ps = con.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                propertydto property = new propertydto(
+                        rs.getString("property_id"),
+                        rs.getString("barangay_name"),
+                        rs.getString("landlord_id"),
+                        rs.getString("property_name"),
+                        rs.getString("property_address"),
+                        rs.getString("property_type"),
+                        rs.getString("property_amenity"),
+                        rs.getDouble("property_price"),
+                        rs.getString("property_status"),
+                        rs.getString("description")
+                );
+                propertyList.add(property);
+            }
+        }
+        return propertyList;
+    }
+
+    public List<propertydto> retrieve_pending_property_by_property_name(String property_name) throws Exception, SQLException {
+        List<propertydto> propertyList = new ArrayList<>();
+        String sql = "SELECT * FROM dbo.property WHERE property_name LIKE ? AND property_status='pending'";
+
+        try ( Connection con = db_util.getConnection();  PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, "%" + property_name + "%");
+
+            try ( ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    propertydto property = new propertydto(
+                            rs.getString("property_id"),
+                            rs.getString("barangay_name"),
+                            rs.getString("landlord_id"),
+                            rs.getString("property_name"),
+                            rs.getString("property_address"),
+                            rs.getString("property_type"),
+                            rs.getString("property_amenity"),
+                            rs.getDouble("property_price"),
+                            rs.getString("property_status"),
+                            rs.getString("description")
+                    );
+                    propertyList.add(property);
+                }
+            }
+        }
+        return propertyList;
+    }
+    //retrive deactive property
+    public List<propertydto> retrieve_all_deactivate_property_bylandlordid(String landlordid) throws Exception {
+        List<propertydto> propertyList = new ArrayList<>();
+        String sql = "SELECT * FROM dbo.property WHERE landlord_id = ? AND property_status = 'deactivate'";
+
+        try ( Connection con = db_util.getConnection();  PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, landlordid); // ✅ bind the parameter
+
+            try ( ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    propertydto property = new propertydto(
+                            rs.getString("property_id"),
+                            rs.getString("barangay_name"),
+                            rs.getString("landlord_id"),
+                            rs.getString("property_name"),
+                            rs.getString("property_address"),
+                            rs.getString("property_type"),
+                            rs.getString("property_amenity"),
+                            rs.getDouble("property_price"),
+                            rs.getString("property_status"),
+                            rs.getString("description")
+                    );
+                    propertyList.add(property);
+                }
+            }
+        }
+        return propertyList;
+    }
+
+    public List<propertydto> retrieve_all_deactivate_property() throws Exception {
+        List<propertydto> propertyList = new ArrayList<>();
+
+        String sql = "SELECT * FROM dbo.property WHERE property_status ='deactivate'";
+
+        try ( Connection con = db_util.getConnection();  PreparedStatement ps = con.prepareStatement(sql);  ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                propertydto property = new propertydto(
+                        rs.getString("property_id"),
+                        rs.getString("barangay_name"),
+                        rs.getString("landlord_id"),
+                        rs.getString("property_name"),
+                        rs.getString("property_address"),
+                        rs.getString("property_type"),
+                        rs.getString("property_amenity"),
+                        rs.getDouble("property_price"),
+                        rs.getString("property_status"),
+                        rs.getString("description")
+                );
+                propertyList.add(property);
+            }
+        }
+        return propertyList;
+    }
+
+    public List<propertydto> retrieve_deactivate_property_by_property_name(String property_name) throws Exception, SQLException {
+        List<propertydto> propertyList = new ArrayList<>();
+        String sql = "SELECT * FROM dbo.property WHERE property_name LIKE ? AND property_status='deactivate'";
+
+        try ( Connection con = db_util.getConnection();  PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, "%" + property_name + "%");
+
+            try ( ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    propertydto property = new propertydto(
+                            rs.getString("property_id"),
+                            rs.getString("barangay_name"),
+                            rs.getString("landlord_id"),
+                            rs.getString("property_name"),
+                            rs.getString("property_address"),
+                            rs.getString("property_type"),
+                            rs.getString("property_amenity"),
+                            rs.getDouble("property_price"),
+                            rs.getString("property_status"),
+                            rs.getString("description")
+                    );
+                    propertyList.add(property);
+                }
+            }
+        }
+        return propertyList;
+    }
+    
     public String create_property(
             String barangay_name,
             String landlord_id,
@@ -142,5 +310,6 @@ public class propertydao {
             throw e;
         }
     }
-
+    
+    
 }
