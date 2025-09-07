@@ -5,7 +5,6 @@
 package eb.dao;
 
 import eb.dto.mediadto;
-import eb.dto.web_userdto;
 import eb.util.db_util;
 import java.sql.Connection;
 import java.sql.PreparedStatement;

@@ -4,12 +4,14 @@ import eb.dao.web_userdao;
 import eb.dto.web_userdto;
 import eb.service.user_service;
 import eb.util.helper_util;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+
 import java.io.IOException;
 
 @WebServlet(name = "normalize_action", urlPatterns = {"/normalize_action"})
@@ -20,15 +22,14 @@ public class normalize_action_controller extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        String action = request.getParameter("action");
+        String action = helper_util.safeLower(request.getParameter("action"));
+        if (helper_util.isBlank(action)) {
+            helper_util.sendBadRequest(response, "Action is missing");
+            return;
+        }
 
         try {
-            if (helper_util.isBlank(action)) {
-                sendError(response, "Action is missing");
-                return;
-            }
-
-            switch (action.toLowerCase()) {
+            switch (action) {
                 case "login":
                     handleLogin(request, response);
                     break;
@@ -39,11 +40,10 @@ public class normalize_action_controller extends HttpServlet {
                     handleRegister(request, response);
                     break;
                 default:
-                    sendError(response, "Unsupported POST action: " + action);
+                    helper_util.sendBadRequest(response, "Unsupported POST action: " + action);
             }
-
         } catch (Exception e) {
-            handleServerError(response, e);
+            helper_util.handleServerError(response, e);
         }
     }
 
@@ -52,24 +52,22 @@ public class normalize_action_controller extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        String action = request.getParameter("action");
+        String action = helper_util.safeLower(request.getParameter("action"));
+        if (helper_util.isBlank(action)) {
+            helper_util.sendBadRequest(response, "Action is missing");
+            return;
+        }
 
         try {
-            if (helper_util.isBlank(action)) {
-                sendError(response, "Action is missing");
-                return;
-            }
-
-            switch (action.toLowerCase()) {
+            switch (action) {
                 case "status":
                     handleStatus(request, response);
                     break;
                 default:
-                    sendError(response, "Unsupported GET action: " + action);
+                    helper_util.sendBadRequest(response, "Unsupported GET action: " + action);
             }
-
         } catch (Exception e) {
-            handleServerError(response, e);
+            helper_util.handleServerError(response, e);
         }
     }
 
@@ -83,7 +81,7 @@ public class normalize_action_controller extends HttpServlet {
         web_userdto user = new web_userdao().authenticateTest(username, password);
 
         if (user != null) {
-            HttpSession session = request.getSession(true); // create if not exists
+            HttpSession session = request.getSession(true);
             session.setAttribute("userId", user.getUser_id());
             session.setAttribute("username", user.getUsername());
             session.setAttribute("role", user.getRole_name());
@@ -91,17 +89,16 @@ public class normalize_action_controller extends HttpServlet {
                     helper_util.isBlank(user.getBarangay_name()) ? null : user.getBarangay_name());
 
             if (helper_util.wantsJson(request)) {
-                response.setContentType("application/json");
                 String json = String.format(
                         "{\"loggedIn\":true,\"username\":\"%s\",\"role\":\"%s\"}",
                         user.getUsername(), user.getRole_name()
                 );
-                response.getWriter().write(json);
+                helper_util.sendOk(response, json);
             } else {
                 response.sendRedirect(request.getContextPath() + "/welcome.jsp");
             }
         } else {
-            sendError(response, "Invalid username or password");
+            helper_util.sendBadRequest(response, "Invalid username or password");
         }
     }
 
@@ -114,15 +111,14 @@ public class normalize_action_controller extends HttpServlet {
         }
 
         if (helper_util.wantsJson(request)) {
-            response.setContentType("application/json");
-            response.getWriter().write("{\"message\":\"Logout successful\"}");
+            helper_util.sendOk(response, "{\"message\":\"Logout successful\"}");
         } else {
             response.sendRedirect(request.getContextPath() + "/welcome.jsp");
         }
     }
 
     private void handleRegister(HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ServletException, Exception {
+            throws Exception {
 
         String username = request.getParameter("username");
         String password = request.getParameter("password");
@@ -133,21 +129,15 @@ public class normalize_action_controller extends HttpServlet {
         boolean success = service.register(username, password, email, phone);
 
         if (helper_util.wantsJson(request)) {
-            response.setContentType("application/json");
             if (success) {
-                response.getWriter().write("{\"message\":\"User created successfully\"}");
+                helper_util.sendOk(response, "{\"message\":\"User created successfully\"}");
             } else {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                response.getWriter().write("{\"error\":\"Failed to create user\"}");
+                helper_util.sendBadRequest(response, "Failed to create user");
             }
         } else {
-            if (success) {
-                request.setAttribute("message", "User created successfully, please login.");
-                request.getRequestDispatcher("registered_form.jsp").forward(request, response);
-            } else {
-                request.setAttribute("error", "Failed to create user.");
-                request.getRequestDispatcher("registered_form.jsp").forward(request, response);
-            }
+            request.setAttribute(success ? "message" : "error",
+                    success ? "User created successfully, please login." : "Failed to create user.");
+            request.getRequestDispatcher("registered_form.jsp").forward(request, response);
         }
     }
 
@@ -155,35 +145,23 @@ public class normalize_action_controller extends HttpServlet {
             throws IOException {
 
         HttpSession session = request.getSession(false);
-
         Object username = (session != null) ? session.getAttribute("username") : null;
         Object role = (session != null) ? session.getAttribute("role") : null;
 
         if (helper_util.wantsJson(request)) {
-            response.setContentType("application/json");
             if (username != null) {
-                response.getWriter().write(
-                        "{\"loggedIn\":true,\"username\":\"" + username + "\",\"role\":\"" + role + "\"}"
+                String json = String.format(
+                        "{\"loggedIn\":true,\"username\":\"%s\",\"role\":\"%s\"}",
+                        username, role
                 );
+                helper_util.sendOk(response, json);
             } else {
-                response.getWriter().write("{\"loggedIn\":false}");
+                helper_util.sendOk(response, "{\"loggedIn\":false}");
             }
         } else {
-            response.getWriter().write(username != null ? "Logged in as " + username : "Not logged in");
+            response.getWriter().write(username != null
+                    ? "Logged in as " + username
+                    : "Not logged in");
         }
-    }
-
-    // ==================== Helpers ====================
-    private void sendError(HttpServletResponse response, String message) throws IOException {
-        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        response.setContentType("application/json");
-        response.getWriter().write("{\"error\":\"" + message + "\"}");
-    }
-
-    private void handleServerError(HttpServletResponse response, Exception e) throws IOException {
-        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        response.setContentType("application/json");
-        response.getWriter().write("{\"error\":\"Server error: " + e.getMessage() + "\"}");
-        e.printStackTrace();
     }
 }

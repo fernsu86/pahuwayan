@@ -4,7 +4,8 @@ import eb.dto.imagefiledto;
 import eb.dto.propertydto;
 import eb.service.property_service;
 import eb.service.uploadfile_service;
-import jakarta.servlet.RequestDispatcher;
+import eb.util.helper_util;  // <-- added
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
@@ -13,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
+
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -26,130 +28,123 @@ import java.util.List;
 @WebServlet(name = "property_controller", urlPatterns = {"/property_controller"})
 public class property_controller extends HttpServlet {
 
-    private final static property_service property = new property_service();
+    // ---- Services -------------------------------------------------------------------------------
+    private static final property_service PROPERTY_SERVICE = new property_service();
 
-    // ==================== POST (Create/Update/Delete) ====================
+    // ---- HTTP Methods ---------------------------------------------------------------------------
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        String action = request.getParameter("action");
+        request.setCharacterEncoding("UTF-8");
+        final String action = helper_util.safeLower(request.getParameter("action"));
+
+        if (action == null) {
+            helper_util.sendBadRequest(response, "Action is missing");
+            return;
+        }
 
         try {
-            if (action == null) {
-                sendError(response, "Action is missing");
-                return;
-            }
-
-            switch (action.toLowerCase()) {
+            switch (action) {
                 case "createproperty":
                     handleCreateProperty(request, response);
                     break;
-
                 case "deletepropertybyid":
                     handleDeleteProperty(request, response);
                     break;
-
                 case "updatepropertybyid":
                     handleUpdateProperty(request, response);
                     break;
-
                 default:
-                    sendError(response, "Unsupported POST action: " + action);
+                    helper_util.sendBadRequest(response, "Unsupported POST action: " + action);
             }
-
         } catch (Exception e) {
-            handleServerError(response, e);
+            helper_util.handleServerError(response, e);
         }
     }
 
-    // ==================== GET (Read operations) ====================
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        String action = request.getParameter("action");
+        request.setCharacterEncoding("UTF-8");
+        final String action = helper_util.safeLower(request.getParameter("action"));
+
+        if (action == null) {
+            helper_util.sendBadRequest(response, "Action is missing");
+            return;
+        }
 
         try {
-            if (action == null) {
-                sendError(response, "Action is missing");
-                return;
-            }
-
-            switch (action.toLowerCase()) {
+            switch (action) {
                 case "viewpropertybylandlordid":
                     handleViewPropertyByLandlord(request, response);
                     break;
-
                 case "searchbypropertynamewithfilter":
                     handleSearchByPropertyName(request, response);
                     break;
-
                 case "viewproperty_list":
                     handleViewPropertyList(request, response);
                     break;
                 default:
-                    sendError(response, "Unsupported GET action: " + action);
+                    helper_util.sendBadRequest(response, "Unsupported GET action: " + action);
             }
-
         } catch (Exception e) {
-            handleServerError(response, e);
+            helper_util.handleServerError(response, e);
         }
     }
 
-    // ==================== Action Handlers ====================
+    // ---- Action Handlers ------------------------------------------------------------------------
     private void handleCreateProperty(HttpServletRequest request, HttpServletResponse response)
-            throws IOException, Exception {
+            throws IOException, ServletException, Exception {
 
         HttpSession session = request.getSession(false);
-
-        if (session == null || session.getAttribute("userId") == null) {
-            sendError(response, "You must be logged in as a landlord.");
+        String landlordId = helper_util.requireLoggedInLandlord(session, response);
+        if (landlordId == null) {
             return;
         }
 
-        // Session values
-        String barangay_name = (String) session.getAttribute("barangay_name");
-        String landlord_id = (String) session.getAttribute("userId");
+        String barangayName = (String) session.getAttribute("barangay_name");
 
-        // Form values
-        String property_name = request.getParameter("property_name");
-        String property_address = request.getParameter("property_address");
-        String property_type = request.getParameter("property_type");
-        String property_amenity = request.getParameter("property_amenity");
-        String description = request.getParameter("description");
-
-        double property_price = 0.0;
-        String priceParam = request.getParameter("property_price");
-        if (priceParam != null && !priceParam.isEmpty()) {
-            try {
-                property_price = Double.parseDouble(priceParam);
-            } catch (NumberFormatException e) {
-                sendError(response, "Invalid property price format.");
-                return;
-            }
+        // Required fields
+        String propertyName = helper_util.requireParam(request, response, "property_name");
+        if (propertyName == null) {
+            return;
         }
 
-        // Step A: Save property first (generate propertyId)
-        String propertyId = property.handle_property(
-                barangay_name,
-                landlord_id,
-                property_name,
-                property_address,
-                property_type,
-                property_amenity,
-                property_price,
+        String propertyAddress = helper_util.requireParam(request, response, "property_address");
+        if (propertyAddress == null) {
+            return;
+        }
+
+        // Optional fields
+        String propertyType = helper_util.optParam(request, "property_type");
+        String propertyAmenity = helper_util.optParam(request, "property_amenity");
+        String description = helper_util.optParam(request, "description");
+        double propertyPrice = helper_util.parseDoubleOrDefault(
+                request.getParameter("property_price"), 0.0
+        );
+
+        // Step A: Create property
+        String propertyId = PROPERTY_SERVICE.handle_property(
+                barangayName,
+                landlordId,
+                propertyName,
+                propertyAddress,
+                propertyType,
+                propertyAmenity,
+                propertyPrice,
                 description
         );
 
-        // Step B: Handle image uploads
-        List<imagefiledto> fileDtos = new ArrayList<>();
-
+        // Step B: Image uploads (optional)
+        List<imagefiledto> files = new ArrayList<>();
         for (Part part : request.getParts()) {
-            if (part.getName().equals("images") && part.getSize() > 0) {
+            if ("images".equals(part.getName()) && part.getSize() > 0) {
                 String originalFileName = Paths.get(part.getSubmittedFileName())
-                        .getFileName().toString();
-                fileDtos.add(new imagefiledto(
+                        .getFileName()
+                        .toString();
+                files.add(new imagefiledto(
                         originalFileName,
                         part.getContentType(),
                         part.getSize(),
@@ -158,127 +153,109 @@ public class property_controller extends HttpServlet {
             }
         }
 
-        // Use uploadDir from web.xml context-param
         String uploadDir = getServletContext().getInitParameter("uploadDir");
         if (uploadDir == null || uploadDir.isEmpty()) {
             throw new ServletException("uploadDir not configured in web.xml");
         }
 
-// If you want it to always be an absolute path (best practice):
-// Example in web.xml: <param-value>C:/permanent_uploads</param-value>
-        uploadfile_service uploadService = new uploadfile_service(uploadDir, false);
-        uploadService.saveImages(propertyId, fileDtos);
+        if (!files.isEmpty()) {
+            uploadfile_service uploadService = new uploadfile_service(uploadDir, false);
+            uploadService.saveImages(propertyId, files);
+        }
 
-        // Fetch updated property list
-        List<propertydto> propertyList = property.handle_retrieve_property(landlord_id);
-
-        // Attach it to request
+        // Refresh landlord properties and forward to dashboard
+        List<propertydto> propertyList = PROPERTY_SERVICE.handle_retrieve_property(landlordId);
         request.setAttribute("propertyList", propertyList);
-
-        // Forward back to landlord dashboard JSP
-        RequestDispatcher rd = request.getRequestDispatcher("landlord.jsp");
-        rd.forward(request, response);
-
+        helper_util.forward(request, response, "landlord.jsp");
     }
 
     private void handleDeleteProperty(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-        // TODO: implement DB delete
-        response.getWriter().write("Property deleted!");
+
+        String propertyId = helper_util.requireParam(request, response, "property_id");
+        if (propertyId == null) {
+            return;
+        }
+
+        try {
+            boolean success = PROPERTY_SERVICE.handle_delete_property(propertyId);
+            if (success) {
+                helper_util.sendOk(response,
+                        "{\"success\":true,\"message\":\"Property deleted successfully!\"}");
+            } else {
+                helper_util.sendNotFound(response,
+                        "{\"success\":false,\"message\":\"Property not found or already deactivated!\"}");
+            }
+        } catch (Exception e) {
+            helper_util.handleServerError(response, e);
+        }
     }
 
     private void handleUpdateProperty(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-        // TODO: implement DB update
-
+        helper_util.sendBadRequest(response, "Update handler not implemented yet.");
     }
 
     private void handleViewPropertyByLandlord(HttpServletRequest request, HttpServletResponse response)
-            throws IOException, Exception {
-        HttpSession session = request.getSession(false);
+            throws IOException, ServletException, Exception {
 
-        if (session == null || session.getAttribute("userId") == null) {
-            sendError(response, "You must be logged in as a landlord.");
+        HttpSession session = request.getSession(false);
+        String landlordId = helper_util.requireLoggedInLandlord(session, response);
+        if (landlordId == null) {
             return;
         }
-        //Session values
-        String landlord_id = (String) session.getAttribute("userId");
-        List<propertydto> propertyList = property.handle_retrieve_property(landlord_id);
-        request.setAttribute("propertyList", propertyList);
-        RequestDispatcher rd = request.getRequestDispatcher("landlord.jsp");
-        rd.forward(request, response);
-        // TODO: fetch landlord properties from DB
 
+        List<propertydto> propertyList = PROPERTY_SERVICE.handle_retrieve_property(landlordId);
+        request.setAttribute("propertyList", propertyList);
+        helper_util.forward(request, response, "landlord.jsp");
     }
 
     private void handleSearchByPropertyName(HttpServletRequest request, HttpServletResponse response)
-            throws IOException, Exception {
-        String property_name = request.getParameter("property_name");
-        String property_type = request.getParameter("property_type");
-        String amenity_type = request.getParameter("amenity_type");
+            throws IOException, ServletException, Exception {
 
-        double min_price = request.getParameter("min_price") != null && !request.getParameter("min_price").isEmpty()
-                ? Double.parseDouble(request.getParameter("min_price"))
-                : 0;
-        double max_price = request.getParameter("max_price") != null && !request.getParameter("max_price").isEmpty()
-                ? Double.parseDouble(request.getParameter("max_price"))
-                : Double.MAX_VALUE;
+        String propertyName = helper_util.optParam(request, "property_name");
+        String propertyType = helper_util.optParam(request, "property_type");
+        String amenityType = helper_util.optParam(request, "amenity_type");
 
-        List<propertydto> propertyList = property.handle_retrieve_by_property_name(property_name);
-        List<propertydto> FilterList = new ArrayList<>();
+        double minPrice = helper_util.parseDoubleOrDefault(
+                request.getParameter("min_price"), 0.0
+        );
+        double maxPrice = helper_util.parseDoubleOrDefault(
+                request.getParameter("max_price"), Double.MAX_VALUE
+        );
 
-        for (propertydto tmp : propertyList) {
+        List<propertydto> propertyList = PROPERTY_SERVICE.handle_retrieve_by_property_name(propertyName);
+        List<propertydto> filtered = new ArrayList<>();
+
+        for (propertydto p : propertyList) {
             boolean matches = true;
 
-            if (property_type != null && !property_type.isEmpty()
-                    && tmp.getProperty_type() != null) {
-                if (!tmp.getProperty_type().toLowerCase().contains(property_type.toLowerCase())) {
-                    matches = false;
-                }
+            if (!helper_util.isBlank(propertyType) && p.getProperty_type() != null
+                    && !p.getProperty_type().toLowerCase().contains(propertyType.toLowerCase())) {
+                matches = false;
             }
-
-            if (amenity_type != null && !amenity_type.isEmpty()
-                    && tmp.getProperty_amenity() != null) {
-                if (!tmp.getProperty_amenity().toLowerCase().contains(amenity_type.toLowerCase())) {
-                    matches = false;
-                }
+            if (!helper_util.isBlank(amenityType) && p.getProperty_amenity() != null
+                    && !p.getProperty_amenity().toLowerCase().contains(amenityType.toLowerCase())) {
+                matches = false;
             }
-
-            if (matches) {
-                if (tmp.getProperty_price() >= min_price && tmp.getProperty_price() <= max_price) {
-                    FilterList.add(tmp);
-                }
+            if (matches && p.getProperty_price() >= minPrice && p.getProperty_price() <= maxPrice) {
+                filtered.add(p);
             }
         }
 
-        request.setAttribute("properties", FilterList); // ✅ matches JSP
-        RequestDispatcher rd = request.getRequestDispatcher("index.jsp");
-        rd.forward(request, response);
+        request.setAttribute("properties", filtered);
+        helper_util.forward(request, response, "index.jsp");
     }
 
     private void handleViewPropertyList(HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException {
-        try {
-            List<propertydto> propertyList = property.handle_retrieve_all_properties();
-            request.setAttribute("properties", propertyList);
 
-            RequestDispatcher rd = request.getRequestDispatcher("index.jsp");
-            rd.forward(request, response);
+        try {
+            List<propertydto> propertyList = PROPERTY_SERVICE.handle_retrieve_all_properties();
+            request.setAttribute("properties", propertyList);
+            helper_util.forward(request, response, "index.jsp");
         } catch (Exception e) {
-            handleServerError(response, e);
+            helper_util.handleServerError(response, e);
         }
     }
-
-    // ==================== Error Helpers ====================
-    private void sendError(HttpServletResponse response, String message) throws IOException {
-        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        response.getWriter().write("{\"error\":\"" + message + "\"}");
-    }
-
-    private void handleServerError(HttpServletResponse response, Exception e) throws IOException {
-        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        response.getWriter().write("{\"error\":\"Server error: " + e.getMessage() + "\"}");
-        e.printStackTrace();
-    }
-
 }

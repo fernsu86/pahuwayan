@@ -19,6 +19,7 @@ import java.util.List;
  * @author ACER
  */
 public class propertydao {
+
     //retrieve active
     public List<propertydto> retrieve_all_property_bylandlordid(String landlordid) throws Exception {
         List<propertydto> propertyList = new ArrayList<>();
@@ -103,6 +104,7 @@ public class propertydao {
         }
         return propertyList;
     }
+
     //retrieve pending property
     public List<propertydto> retrieve_all_pending_property_bylandlordid(String landlordid) throws Exception {
         List<propertydto> propertyList = new ArrayList<>();
@@ -187,6 +189,7 @@ public class propertydao {
         }
         return propertyList;
     }
+
     //retrive deactive property
     public List<propertydto> retrieve_all_deactivate_property_bylandlordid(String landlordid) throws Exception {
         List<propertydto> propertyList = new ArrayList<>();
@@ -271,7 +274,7 @@ public class propertydao {
         }
         return propertyList;
     }
-    
+
     public String create_property(
             String barangay_name,
             String landlord_id,
@@ -310,6 +313,31 @@ public class propertydao {
             throw e;
         }
     }
-    
-    
+
+    public boolean update_property_status(String property_status, String property_id) throws Exception {
+        String sql = "UPDATE dbo.property SET property_status = ? WHERE property_id = ?";
+        try ( Connection con = db_util.getConnection();  PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, property_status);
+            ps.setString(2, property_id);
+
+            int rowsUpdated = ps.executeUpdate();
+            return rowsUpdated > 0;  // true if at least 1 row updated
+        } catch (SQLException e) {
+            throw e;  // or wrap into a custom exception
+        }
+    }
+
+    public boolean delete_property(String property_id) throws Exception {
+        String sql = "UPDATE dbo.property SET property_status = 'deactivate' WHERE property_id = ?";
+        try ( Connection con = db_util.getConnection();  PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, property_id);
+
+            int rowsUpdated = ps.executeUpdate();
+            return rowsUpdated > 0;  // true if at least 1 row updated
+        } catch (SQLException e) {
+            throw e;  // or wrap into a custom exception
+        }
+
+    }
 }

@@ -16,9 +16,9 @@ import java.util.List;
 @WebServlet(name = "landlord_controller", urlPatterns = {"/landlord_controller"})
 public class landlord_controller extends HttpServlet {
 
-    private static final user_service user = new user_service();
+    private static final user_service userService = new user_service();
 
-    // ==================== POST (Create, Delete) ====================
+    // ==================== POST (Create, Update, Delete) ====================
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -32,24 +32,25 @@ public class landlord_controller extends HttpServlet {
             }
 
             switch (action.toLowerCase()) {
-                case "deletelandlordbyid":
-                    // TODO: implement delete logic
-                    break;
                 case "createlandlord":
-                    handleLandlord(request, response);
+                    handleCreateLandlord(request, response);
                     break;
                 case "updatelandlordbyid":
                     handleUpdateLandlord(request, response);
                     break;
+                case "deletelandlordbyid":
+                    //  handleDeleteLandlord(request, response);
+                    break;
                 default:
                     sendError(response, "Unsupported POST action: " + action);
+                    break;
             }
         } catch (Exception e) {
             handleServerError(response, e);
         }
     }
 
-    // ==================== GET (Status, View List) ====================
+    // ==================== GET (Status, List) ====================
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -71,14 +72,15 @@ public class landlord_controller extends HttpServlet {
                     break;
                 default:
                     sendError(response, "Unsupported GET action: " + action);
+                    break;
             }
         } catch (Exception e) {
             handleServerError(response, e);
         }
     }
 
-    // ==================== Handlers ====================  
-    private void handleLandlord(HttpServletRequest request, HttpServletResponse response)
+    // ==================== Handlers ====================
+    private void handleCreateLandlord(HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException, Exception {
 
         String username = request.getParameter("username");
@@ -87,25 +89,23 @@ public class landlord_controller extends HttpServlet {
         String email = helper_util.normalizeEmail(request.getParameter("email"));
         String barangay_name = request.getParameter("barangay_name");
 
-        user_service service = new user_service();
-        boolean success = service.createLandlord(username, password, barangay_name, email, phone);
+        boolean success = userService.createLandlord(username, password, barangay_name, email, phone);
 
         if (helper_util.wantsJson(request)) {
             response.setContentType("application/json");
             if (success) {
-                response.getWriter().write("{\"message\":\"User created successfully\"}");
+                response.getWriter().write("{\"message\":\"Landlord created successfully\"}");
             } else {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                response.getWriter().write("{\"error\":\"Failed to create user\"}");
+                response.getWriter().write("{\"error\":\"Failed to create landlord\"}");
             }
         } else {
             if (success) {
-                List<web_userdto> landlordList = user.retrieveLandLord("landlord");
+                List<web_userdto> landlordList = userService.retrieveLandLord("landlord");
                 request.setAttribute("landlordList", landlordList);
-                RequestDispatcher rd = request.getRequestDispatcher("admin.jsp");
-                rd.forward(request, response);
+                request.getRequestDispatcher("admin.jsp").forward(request, response);
             } else {
-                request.setAttribute("error", "Failed to create user.");
+                request.setAttribute("error", "Failed to create landlord.");
                 request.getRequestDispatcher("admin.jsp").forward(request, response);
             }
         }
@@ -123,7 +123,7 @@ public class landlord_controller extends HttpServlet {
         String email = request.getParameter("email");
         String phone = request.getParameter("phone");
 
-        boolean success = user.update(
+        boolean success = userService.update(
                 user_id, username, password, status,
                 role_name, barangay_name, email, phone
         );
@@ -134,10 +134,35 @@ public class landlord_controller extends HttpServlet {
             request.setAttribute("error", "Failed to update landlord.");
         }
 
-        // forward to landlord list or detail page
         request.getRequestDispatcher("admin.jsp").forward(request, response);
     }
 
+    /*
+    private void handleDeleteLandlord(HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException, Exception {
+
+        String user_id = request.getParameter("user_id");
+        boolean success = userService.delete(user_id);
+
+        if (helper_util.wantsJson(request)) {
+            response.setContentType("application/json");
+            if (success) {
+                response.getWriter().write("{\"message\":\"Landlord deleted successfully\"}");
+            } else {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("{\"error\":\"Failed to delete landlord\"}");
+            }
+        } else {
+            if (success) {
+                List<web_userdto> landlordList = userService.retrieveLandLord("landlord");
+                request.setAttribute("landlordList", landlordList);
+            } else {
+                request.setAttribute("error", "Failed to delete landlord.");
+            }
+            request.getRequestDispatcher("admin.jsp").forward(request, response);
+        }
+    }
+     */
     private void handleListLandlord(HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException, Exception {
 
@@ -148,12 +173,11 @@ public class landlord_controller extends HttpServlet {
             return;
         }
 
-        List<web_userdto> landlordList = user.retrieveLandLord("landlord");
+        List<web_userdto> landlordList = userService.retrieveLandLord("landlord");
         request.setAttribute("landlordList", landlordList);
         RequestDispatcher rd = request.getRequestDispatcher("admin.jsp");
         rd.forward(request, response);
     }
-// no idea what this handle do lol
 
     private void handleStatus(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
@@ -172,7 +196,9 @@ public class landlord_controller extends HttpServlet {
                 response.getWriter().write("{\"loggedIn\":false}");
             }
         } else {
-            response.getWriter().write(username != null ? "Logged in as " + username : "Not logged in");
+            response.getWriter().write(username != null
+                    ? "Logged in as " + username
+                    : "Not logged in");
         }
     }
 
@@ -184,9 +210,9 @@ public class landlord_controller extends HttpServlet {
     }
 
     private void handleServerError(HttpServletResponse response, Exception e) throws IOException {
+        e.printStackTrace();
         response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         response.setContentType("application/json");
         response.getWriter().write("{\"error\":\"Server error: " + e.getMessage() + "\"}");
-        e.printStackTrace();
     }
 }
