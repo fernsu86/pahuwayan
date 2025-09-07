@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -25,21 +26,18 @@ public class landlord_controller extends HttpServlet {
 
         String action = request.getParameter("action");
 
-        try {
-            if (helper_util.isBlank(action)) {
-                sendError(response, "Action is missing");
-                return;
-            }
+        if (helper_util.isBlank(action)) {
+            sendError(response, "Action is missing");
+            return;
+        }
 
+        try {
             switch (action.toLowerCase()) {
                 case "createlandlord":
                     handleCreateLandlord(request, response);
                     break;
-                case "updatelandlordbyid":
+                case "updatelandlord":
                     handleUpdateLandlord(request, response);
-                    break;
-                case "deletelandlordbyid":
-                    //  handleDeleteLandlord(request, response);
                     break;
                 default:
                     sendError(response, "Unsupported POST action: " + action);
@@ -57,12 +55,12 @@ public class landlord_controller extends HttpServlet {
 
         String action = request.getParameter("action");
 
-        try {
-            if (helper_util.isBlank(action)) {
-                sendError(response, "Action is missing");
-                return;
-            }
+        if (helper_util.isBlank(action)) {
+            sendError(response, "Action is missing");
+            return;
+        }
 
+        try {
             switch (action.toLowerCase()) {
                 case "status":
                     handleStatus(request, response);
@@ -81,93 +79,67 @@ public class landlord_controller extends HttpServlet {
 
     // ==================== Handlers ====================
     private void handleCreateLandlord(HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ServletException, Exception {
+            throws Exception {
 
         String username = request.getParameter("username");
         String password = request.getParameter("password");
         String phone = helper_util.normalizePhone(request.getParameter("phone"));
         String email = helper_util.normalizeEmail(request.getParameter("email"));
-        String barangay_name = request.getParameter("barangay_name");
+        String barangayName = request.getParameter("barangay_name");
 
-        boolean success = userService.createLandlord(username, password, barangay_name, email, phone);
+        boolean success = userService.createLandlord(username, password, barangayName, email, phone);
 
-        if (helper_util.wantsJson(request)) {
-            response.setContentType("application/json");
-            if (success) {
-                response.getWriter().write("{\"message\":\"Landlord created successfully\"}");
-            } else {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                response.getWriter().write("{\"error\":\"Failed to create landlord\"}");
-            }
+        if (success) {
+            // reload list and forward to admin.jsp
+            List<web_userdto> landlordList = userService.retrieveLandLord("landlord");
+            request.setAttribute("landlordList", landlordList);
+            request.setAttribute("message", "Landlord created successfully");
         } else {
-            if (success) {
-                List<web_userdto> landlordList = userService.retrieveLandLord("landlord");
-                request.setAttribute("landlordList", landlordList);
-                request.getRequestDispatcher("admin.jsp").forward(request, response);
-            } else {
-                request.setAttribute("error", "Failed to create landlord.");
-                request.getRequestDispatcher("admin.jsp").forward(request, response);
-            }
+            request.setAttribute("error", "Failed to create landlord.");
         }
+
+        RequestDispatcher rd = request.getRequestDispatcher("admin.jsp");
+        rd.forward(request, response);
     }
 
     private void handleUpdateLandlord(HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ServletException, Exception {
+            throws Exception {
 
-        String user_id = request.getParameter("user_id");
+        String userId = request.getParameter("user_id");
         String username = request.getParameter("username");
-        String password = request.getParameter("password");
         String status = request.getParameter("status");
-        String role_name = request.getParameter("role_name");
-        String barangay_name = request.getParameter("barangay_name");
+        String barangay = request.getParameter("barangay_name");
         String email = request.getParameter("email");
         String phone = request.getParameter("phone");
+        String password = request.getParameter("password"); // may be empty
 
-        boolean success = userService.update(
-                user_id, username, password, status,
-                role_name, barangay_name, email, phone
+        if (helper_util.isBlank(password)) {
+            password = null;
+        }
+
+        boolean updated = userService.update(
+                userId, username, password, status,
+                "landlord", barangay, email, phone
         );
 
-        if (success) {
-            request.setAttribute("message", "Landlord updated successfully!");
+        if (updated) {
+            request.setAttribute("message", "Landlord updated successfully");
         } else {
-            request.setAttribute("error", "Failed to update landlord.");
+            request.setAttribute("error", "Failed to update landlord");
         }
 
-        request.getRequestDispatcher("admin.jsp").forward(request, response);
+        // reload landlord list for admin.jsp
+        List<web_userdto> landlordList = userService.retrieveLandLord("landlord");
+        request.setAttribute("landlordList", landlordList);
+
+        RequestDispatcher rd = request.getRequestDispatcher("admin.jsp");
+        rd.forward(request, response);
     }
 
-    /*
-    private void handleDeleteLandlord(HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ServletException, Exception {
-
-        String user_id = request.getParameter("user_id");
-        boolean success = userService.delete(user_id);
-
-        if (helper_util.wantsJson(request)) {
-            response.setContentType("application/json");
-            if (success) {
-                response.getWriter().write("{\"message\":\"Landlord deleted successfully\"}");
-            } else {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                response.getWriter().write("{\"error\":\"Failed to delete landlord\"}");
-            }
-        } else {
-            if (success) {
-                List<web_userdto> landlordList = userService.retrieveLandLord("landlord");
-                request.setAttribute("landlordList", landlordList);
-            } else {
-                request.setAttribute("error", "Failed to delete landlord.");
-            }
-            request.getRequestDispatcher("admin.jsp").forward(request, response);
-        }
-    }
-     */
     private void handleListLandlord(HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ServletException, Exception {
+            throws Exception {
 
         HttpSession session = request.getSession(false);
-
         if (session == null || session.getAttribute("userId") == null) {
             sendError(response, "You must be logged in as an admin.");
             return;
@@ -175,6 +147,7 @@ public class landlord_controller extends HttpServlet {
 
         List<web_userdto> landlordList = userService.retrieveLandLord("landlord");
         request.setAttribute("landlordList", landlordList);
+
         RequestDispatcher rd = request.getRequestDispatcher("admin.jsp");
         rd.forward(request, response);
     }
