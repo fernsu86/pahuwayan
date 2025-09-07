@@ -78,7 +78,7 @@ public class normalize_action_controller extends HttpServlet {
         String username = request.getParameter("username");
         String password = request.getParameter("password");
 
-        web_userdto user = new web_userdao().authenticateTest(username, password);
+        web_userdto user = new web_userdao().authenticate(username, password);
 
         if (user != null) {
             HttpSession session = request.getSession(true);

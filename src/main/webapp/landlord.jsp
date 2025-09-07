@@ -113,6 +113,7 @@
 
         <!-- ================= Property Cards ================= -->
         <h2>Your Properties</h2>
+
         <c:if test="${empty propertyList}">
             <p>You don’t have any properties yet.</p>
         </c:if>
@@ -129,20 +130,32 @@
                                     <img src="${pageContext.request.contextPath}/${img['image_path']}" 
                                          alt="Property Image"/>
                                 </c:forEach>
-
                             </div>
                         </c:if>
 
+                        <!-- Property details -->
                         <div class="property-title">${p.property_name}</div>
                         <div class="property-type">${p.property_type}</div>
                         <div class="property-price">₱ ${p.property_price}</div>
                         <div class="property-desc">${p.description}</div>
                         <div><strong>Amenities:</strong> ${p.property_amenity}</div>
                         <div><strong>Address:</strong> ${p.property_address}</div>
+
+                        <!-- Delete form -->
+                        <form action="property_controller" method="post" style="margin-top:10px;">
+                            <input type="hidden" name="action" value="deletepropertybyid"/>
+                            <input type="hidden" name="property_id" value="${p.property_id}"/>
+                            <button type="submit" 
+                                    onclick="return confirm('Are you sure you want to delete this property?')">
+                                Delete
+                            </button>
+                        </form>
+
                     </div>
                 </c:forEach>
             </div>
         </c:if>
+
 
     </body>
 </html>
