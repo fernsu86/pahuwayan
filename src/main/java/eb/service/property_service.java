@@ -58,4 +58,6 @@ public class property_service {
         }
         return propertyList;
     }
+    
+    
 }
